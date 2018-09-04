@@ -142,7 +142,7 @@ module Lita
             vals = vals.sort
 
             msg[:fields] << {
-              title: 'Project',
+              title: "Project #{'-' * 50}",
               value: proj.capitalize,
               short: false
             }
