@@ -69,13 +69,16 @@ module Lita
         end
 
         if documents
-          documents.each do |proj, params|
-            log.debug "proj: #{proj}, params: #{params.inspect}"
-            if params.empty?
+          documents.each do |proj, roles|
+            log.debug "proj: #{proj}, params: #{roles.inspect}"
+            if roles.empty?
               log.error("no params for #{proj}")
             else
-              result[proj] = params.map { |k, v| v }.inject(:merge).select do |k, _|
-                %w[branch release_timestamp current_revision deploy_user].include?(k)
+              result[proj] = {}
+              roles.each do |role, params|
+                result[proj][role] = params.select do |k, _|
+                  %w[branch release_timestamp current_revision deploy_user].include?(k)
+                end
               end
             end
           end
@@ -124,34 +127,50 @@ module Lita
           project     = data[:project]
           msg[:title] = "#{env} - #{project}"
 
-          deployment[project]['release_timestamp'] = DateTime.parse(deployment[project]['release_timestamp']).to_time
-          deployment[project] = deployment[project].sort
-
-          deployment[project].each do |key, value|
+          deployment[project].each do |role, params|
+            params['release_timestamp'] = DateTime.parse(params['release_timestamp']).to_time
+            params = params.sort
             msg[:fields] << {
-              title: key.capitalize,
-              value: value,
-              short: true
-            }
-          end
-        else
-          msg[:title] = env
-
-          deployment.each do |proj, vals|
-            vals['release_timestamp'] = DateTime.parse(vals['release_timestamp']).to_time
-            vals = vals.sort
-
-            msg[:fields] << {
-              title: "Project #{'-' * 50}",
-              value: proj.capitalize,
+              title: "Role #{'-' * 30}",
+              value: role,
               short: false
             }
-            vals.each do |key, value|
+
+            params.each do |key, value|
               msg[:fields] << {
                 title: key.capitalize,
                 value: value,
                 short: true
               }
+            end
+          end
+        else
+          msg[:title] = env
+
+          deployment.each do |proj, roles|
+            msg[:fields] << {
+              title: "Project #{'-' * 50}",
+              value: proj.capitalize,
+              short: false
+            }
+
+            roles.each do |role, params|
+              params['release_timestamp'] = DateTime.parse(params['release_timestamp']).to_time
+              params = params.sort
+
+              msg[:fields] << {
+                title: "Role #{'-' * 30}",
+                value: role,
+                short: false
+              }
+
+              params.each do |key, value|
+                msg[:fields] << {
+                  title: key.capitalize,
+                  value: value,
+                  short: true
+                }
+              end
             end
           end
         end
@@ -175,16 +194,20 @@ module Lita
 
         if data[:project]
           msg[:fields] = []
-          msg[:fields] << {
-            title: data[:project],
-            value: deployment[data[:project]]['branch'],
-            short: false
-          }
+          deployment[data[:project]].each do |role, params|
+            msg[:fields] << {
+              title: [data[:project], role].uniq.join(' - '),
+              value: params['branch'],
+              short: false
+            }
+          end
         else
           text << '```'
 
-          deployment.each do |proj, vals|
-            text << "#{proj.ljust(25)} - #{vals['branch']}\n"
+          deployment.each do |proj, roles|
+            roles.each do |role, params|
+              text << "#{[proj, role].uniq.join(' - ').ljust(25)} - #{params['branch']}\n"
+            end
           end
 
           text << '```'
@@ -202,23 +225,27 @@ module Lita
 
       def simple_message(data, deployment)
         message = ''
+        message = "Environment: #{data[:environment]}\n"
 
         if data[:project]
           project = data[:project]
-          message = "Environment: #{data[:environment]}, "
-          message << "Branch: #{deployment[project]['branch']}, "
-          message << "Commit: #{deployment[project]['current_revision']}, "
-          message << "Deployer: #{deployment[project]['deploy_user']}, "
-          message << "Date: #{deployment[project]['release_timestamp']}"
+          deployment[project].each do |role, params|
+            message << "Role: #{role}, "
+            message << "Branch: #{params['branch']}, "
+            message << "Commit: #{params['current_revision']}, "
+            message << "Deployer: #{params['deploy_user']}, "
+            message << "Date: #{params['release_timestamp']}\n"
+          end
         else
-          message = "Environment: #{data[:environment]}\n"
-
-          deployment.each do |proj, vals|
+          deployment.each do |proj, roles|
             message << "Project: #{proj}\n"
-            message << "Branch: #{vals['branch']}, "
-            message << "Commit: #{vals['current_revision']}, "
-            message << "Deployer: #{vals['deploy_user']}, "
-            message << "Date: #{vals['release_timestamp']}\n"
+            roles.each do |role, params|
+              message << "Role: #{role}, "
+              message << "Branch: #{params['branch']}, "
+              message << "Commit: #{params['current_revision']}, "
+              message << "Deployer: #{params['deploy_user']}, "
+              message << "Date: #{params['release_timestamp']}\n"
+            end
           end
         end
 
