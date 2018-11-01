@@ -110,9 +110,9 @@ module Lita
           error = 'wrong arguments'
         end
 
-        log.info data.to_json
+        log.info data.force_encoding('utf-8').to_json
 
-        return data, error
+        [data, error]
       end
 
       def slack_message_ext(data, deployment)
@@ -224,7 +224,6 @@ module Lita
       end
 
       def simple_message(data, deployment)
-        message = ''
         message = "Environment: #{data[:environment]}\n"
 
         if data[:project]
@@ -249,7 +248,7 @@ module Lita
           end
         end
 
-        return message
+        message
       end
     end
   end

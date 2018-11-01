@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "lita-punk"
-  spec.version       = "0.2.0"
+  spec.version       = "0.2.1"
   spec.authors       = ["Antony Ryabov"]
   spec.email         = ["anton.ryabov@onetwotrip.com"]
   spec.description   = "punk"
