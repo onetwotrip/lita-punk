@@ -65,14 +65,14 @@ module Lita
                         .map{ |p| p['_source']['apps_v2'] }
                         .inject(:merge)
         rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Net::ReadTimeout => e
-          log.error("can't search in elastic due: #{e.message}")
+          log.error("[PUNK] can't search in elastic due: #{e.message}")
         end
 
         if documents
           documents.each do |proj, roles|
-            log.debug "proj: #{proj}, params: #{roles.inspect}"
+            log.debug "[PUNK]  proj: #{proj}, params: #{roles.inspect}"
             if roles.empty?
-              log.error("no params for #{proj}")
+              log.error("[PUNK]  no params for #{proj}")
             else
               result[proj] = {}
               roles.each do |role, params|
@@ -110,7 +110,7 @@ module Lita
           error = 'wrong arguments'
         end
 
-        log.info data.force_encoding('utf-8').to_json
+        log.info "[PUNK] data: #{data.to_json}"
 
         [data, error]
       end
@@ -180,7 +180,7 @@ module Lita
           robot.chat_service.send_attachment(data[:target], attachment)
           return true
         rescue StandardError => e
-          log.error("can't send slack message due: #{e.message}")
+          log.error("[PUNK] can't send slack message due: #{e.message}")
           return false
         end
       end
@@ -218,7 +218,7 @@ module Lita
           robot.chat_service.send_attachment(data[:target], attachment)
           return true
         rescue StandardError => e
-          log.error("can't send slack message due: #{e.message}")
+          log.error("[PUNK] can't send slack message due: #{e.message}")
           return false
         end
       end
